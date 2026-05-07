@@ -1,0 +1,113 @@
+services:
+
+  # ── Bases de données ──────────────────────────
+  planeo-back-db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: planeo
+    ports:
+      - "3306:3306"
+    volumes:
+      - planeo_back_data:/var/lib/mysql
+
+  planeo-auth-db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: planeo_auth
+    ports:
+      - "3307:3306"
+    volumes:
+      - planeo_auth_data:/var/lib/mysql
+
+  planeo-admin-db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: planeo_admin
+    ports:
+      - "3308:3306"
+    volumes:
+      - planeo_admin_data:/var/lib/mysql
+
+  # ── Kafka ──────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    
+  # ── Services Spring Boot ──────────────────────
+  planeo-auth:
+    build:
+      context: ../planeo-auth
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://planeo-auth-db:3306/planeo_auth?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_KAFKA_BOOTSTRAP_SERVER: kafka:9092
+    depends_on:
+      - planeo-auth-db
+
+  planeo-back:
+    build:
+      context: ../planeo_back
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://planeo-back-db:3306/planeo?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      - planeo-back-db
+
+  planeo-gateway:
+    build:
+      context: ../planeo_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      - planeo-auth
+      - planeo-back
+
+  planeo-admin:
+    build:
+      context: ../planeo_admin
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://planeo-admin-db:3306/planeo_admin?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - planeo-admin-db
+      - kafka
+
+  # ── Frontend ──────────────────────────────────
+  planeo-front:
+    build:
+      context: ../planeo_front
+    ports:
+      - "80:80"
+    depends_on:
+      - planeo-gateway
+
+volumes:
+  planeo_back_data:
+  planeo_auth_data:
+  planeo_admin_data:
