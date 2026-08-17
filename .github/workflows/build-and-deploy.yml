@@ -51,7 +51,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd ~/home/planeo/planeo_infra
+            cd /home/deploy/planeo_infra
             docker compose pull ${{ inputs.service_name }}
             docker compose up -d ${{ inputs.service_name }}
             docker image prune -f
