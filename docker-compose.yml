@@ -1,11 +1,12 @@
+name : planeo_admin
 services:
 
-  # ── Bases de données ──────────────────────────
+  # ── bases de données ──────────────────────────
   planeo-back-db:
     image: mysql:8
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: planeo
+      mysql_root_password: root
+      mysql_database: planeo
     ports:
       - "3306:3306"
     volumes:
@@ -14,8 +15,8 @@ services:
   planeo-auth-db:
     image: mysql:8
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: planeo_auth
+      mysql_root_password: root
+      mysql_database: planeo_auth
     ports:
       - "3307:3306"
     volumes:
